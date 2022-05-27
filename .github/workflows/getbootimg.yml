@@ -5,6 +5,12 @@ name: Get boot.img from MIUI Stock ROM
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
+  workflow_dispatch:
+    inputs:
+     ROM_URL:
+      description: 'OTA Url'
+      required: true
+      default: ''
   push:
     branches:
       - main
@@ -13,8 +19,6 @@ on:
       - main
     
 env:
-  # https://xiaomifirmwareupdater.com/
-  ROM_URL: https://bigota.d.miui.com/V13.0.7.0.SLMCNXM/miui_MUNCH_V13.0.7.0.SLMCNXM_4d8e90d2c3_12.0.zip
   TZ: Asia/Shanghai
 
 jobs:
@@ -36,6 +40,7 @@ jobs:
         python -m pip install protobuf
         python -m pip install bsdiff4
         python -m pip install requests
+        sudo apt-get install -y axel
         
     - name: Clone the tools source code
       run: |
@@ -43,10 +48,9 @@ jobs:
         git clone https://github.com/vm03/payload_dumper.git
         git clone https://github.com/iamleot/transferwee.git
         
-    - name: Download the ROM
+    - name: Download ROM
       run: |
-        cd ~
-        wget -O rom.zip $ROM_URL
+          axel -n $(nproc) ${{ github.event.inputs.ROM_URL }} -o rom.zip
         
     - name: Unzip&Remove the ROM
       run: |
