@@ -3,21 +3,17 @@
 name: Get boot.img from MIUI Stock ROM
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
+  # https://xiaomifirmwareupdater.com/
   workflow_dispatch:
     inputs:
-     ROM_URL:
-      description: 'OTA Url'
-      required: true
-      default: ''
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-    
+      ROM_URL:
+        description: 'OTA Url'
+        required: true
+        default: ''
+      tag:
+        description: 'tag'
+        default: 'bootimg'
+        
 env:
   TZ: Asia/Shanghai
 
@@ -30,14 +26,14 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.6
         architecture: x64
         
     - name: Init environment
       run: |
         cd ~
         python -m pip install wheel
-        python -m pip install protobuf
+        python -m pip install protobuf==3.19.4
         python -m pip install bsdiff4
         python -m pip install requests
         sudo apt-get install -y axel
@@ -50,7 +46,8 @@ jobs:
         
     - name: Download ROM
       run: |
-          axel -n $(nproc) ${{ github.event.inputs.ROM_URL }} -o rom.zip
+        cd ~
+        axel -n 4 ${{ github.event.inputs.ROM_URL }} -o rom.zip
         
     - name: Unzip&Remove the ROM
       run: |
@@ -68,14 +65,14 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: bootimg
-        path: payload_dumper/output/boot.img
+        name: ${{ github.event.inputs.tag }}
+        path: ~/payload_dumper/output/bootimg.tgz
         
     - name: Upload the bootimg to NetDisks
       run: |
         # WeTransfer
         cd ~ && cd transferwee
-        python transferwee.py upload -m $ROM_URL ~/payload_dumper/output/bootimg.tgz
+        python transferwee.py upload -m ${{ github.event.inputs.ROM_URL }} ~/payload_dumper/output/bootimg.tgz
         
         
         # https://github.com/Mikubill/transfer
@@ -83,6 +80,6 @@ jobs:
         curl -sL https://git.io/file-transfer | sh
         # AirPortal
         ./transfer arp ~/payload_dumper/output/bootimg.tgz
-        # 奶牛快传
-        ./transfer cow ~/payload_dumper/output/bootimg.tgz
+        # 文叔叔
+        ./transfer wss ~/payload_dumper/output/bootimg.tgz
         
